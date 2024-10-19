@@ -34,6 +34,30 @@ def invert_image_color(image_bytes):
     inverted_image_bytes = buffer.tobytes()
     return inverted_image_bytes
 
+# Função para combinar duas imagens horizontalmente
+def combine_images(image_bytes1, image_bytes2):
+    # Abrir as duas imagens
+    image1 = Image.open(BytesIO(image_bytes1))
+    image2 = Image.open(BytesIO(image_bytes2))
+    
+    # Garantir que ambas as imagens tenham a mesma altura
+    if image1.height != image2.height:
+        # Redimensionar a segunda imagem para a altura da primeira
+        aspect_ratio = image2.width / image2.height
+        new_width = int(image1.height * aspect_ratio)
+        image2 = image2.resize((new_width, image1.height))
+    
+    # Combinar as imagens horizontalmente
+    combined_image = Image.new('RGB', (image1.width + image2.width, image1.height))
+    combined_image.paste(image1, (0, 0))
+    combined_image.paste(image2, (image1.width, 0))
+    
+    # Salvar a imagem combinada em bytes
+    byte_arr = BytesIO()
+    combined_image.save(byte_arr, format='JPEG', optimize=True)
+    combined_image_bytes = byte_arr.getvalue()
+    return combined_image_bytes
+
 # Função para converter PDF em imagens (sem aplicar inversão de cores)
 def convert_pdf_to_images(file_path, scale=300/72):
     pdf_file = pdfium.PdfDocument(file_path)
@@ -131,9 +155,11 @@ def main():
                     # Aplicar inversão de cores à primeira imagem para o LLM
                     enhanced_image_bytes = invert_image_color(first_image_bytes)
 
-                    # Codificar as imagens (original e invertida) em base64
-                    base64_image_original = encode_image(first_image_bytes)
-                    base64_image_inverted = encode_image(enhanced_image_bytes)
+                    # Combinar as imagens original e invertida
+                    combined_image_bytes = combine_images(first_image_bytes, enhanced_image_bytes)
+
+                    # Codificar a imagem combinada em base64
+                    base64_combined_image = encode_image(combined_image_bytes)
                 else:
                     # É uma imagem
                     image_bytes = uploaded_file.getvalue()
@@ -145,9 +171,11 @@ def main():
                     # Aplicar inversão de cores à imagem para o LLM
                     enhanced_image_bytes = invert_image_color(image_bytes)
 
-                    # Codificar as imagens (original e invertida) em base64
-                    base64_image_original = encode_image(image_bytes)
-                    base64_image_inverted = encode_image(enhanced_image_bytes)
+                    # Combinar as imagens original e invertida
+                    combined_image_bytes = combine_images(image_bytes, enhanced_image_bytes)
+
+                    # Codificar a imagem combinada em base64
+                    base64_combined_image = encode_image(combined_image_bytes)
 
             # Definições dos campos do JSON (mantido igual)
             field_definitions = (
@@ -286,20 +314,12 @@ def main():
                 }
             ]
 
-            # Adicionar as imagens (original e invertida) ao conteúdo da mensagem
+            # Adicionar a imagem combinada ao conteúdo da mensagem
             message_content.append(
                 {
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/jpeg;base64,{base64_image_original}"
-                    }
-                }
-            )
-            message_content.append(
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{base64_image_inverted}"
+                        "url": f"data:image/jpeg;base64,{base64_combined_image}"
                     }
                 }
             )
@@ -422,3 +442,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
