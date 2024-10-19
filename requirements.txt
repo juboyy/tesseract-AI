@@ -1,0 +1,7 @@
+groq
+streamlit
+pillow
+pypdfium2
+pytesseract
+opencv-python
+numpy
