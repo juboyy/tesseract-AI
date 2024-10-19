@@ -327,7 +327,7 @@ def main():
             # Função para gerar o JSON usando a API Groq
             def generate_json():
                 completion = client.chat.completions.create(
-                    model="llama-3.2-11b-vision-preview",
+                    model="llama-3.2-90b-vision-preview",
                     messages=[
                         {
                             "role": "user",
