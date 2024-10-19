@@ -1,5 +1,6 @@
 groq
 streamlit
+streamlit-ace
 pillow
 pypdfium2
 pytesseract
