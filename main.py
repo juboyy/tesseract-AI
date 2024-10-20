@@ -92,15 +92,19 @@ def main():
     st.set_page_config(layout="wide")  # Ajusta o layout para largura total
     st.title('OFM Extractor | llama 3.2')
 
-    # Inicializar o estado do Streamlit para armazenar o JSON gerado e o último arquivo
+    # Inicializar o estado do Streamlit para armazenar o JSON gerado, editor e contador de versões
     if 'generated_json' not in st.session_state:
         st.session_state.generated_json = ""
+    if 'ace_json_editor' not in st.session_state:
+        st.session_state.ace_json_editor = ""
     if 'last_uploaded_file' not in st.session_state:
         st.session_state.last_uploaded_file = None
     if 'images_list' not in st.session_state:
         st.session_state.images_list = []
     if 'ocr_text' not in st.session_state:
         st.session_state.ocr_text = ""
+    if 'editor_version' not in st.session_state:
+        st.session_state.editor_version = 0  # Inicializa o contador de versões
 
     # Obter a chave de API da variável de ambiente
     api_key = os.getenv('GROQ_API_KEY')
@@ -119,10 +123,12 @@ def main():
         if st.session_state.last_uploaded_file != uploaded_file.name:
             # Atualizar o último arquivo carregado
             st.session_state.last_uploaded_file = uploaded_file.name
-            # Limpar o JSON gerado anteriormente e outros estados
+            # Limpar o JSON gerado anteriormente, editor e outros estados
             st.session_state.generated_json = ""
+            st.session_state.ace_json_editor = ""
             st.session_state.images_list = []
             st.session_state.ocr_text = ""
+            st.session_state.editor_version += 1  # Incrementa o contador de versões
     else:
         # Se nenhum arquivo estiver carregado, limpar todos os estados
         if st.session_state.generated_json != "":
@@ -133,6 +139,10 @@ def main():
             st.session_state.images_list = []
         if st.session_state.ocr_text != "":
             st.session_state.ocr_text = ""
+        if st.session_state.ace_json_editor != "":
+            st.session_state.ace_json_editor = ""
+        if st.session_state.editor_version != 0:
+            st.session_state.editor_version = 0  # Reseta o contador de versões
 
     if uploaded_file is not None:
         try:
@@ -327,7 +337,7 @@ def main():
             # Função para gerar o JSON usando a API Groq
             def generate_json():
                 completion = client.chat.completions.create(
-                    model="llama-3.2-90b-vision-preview",
+                    model="llama-3.2-11b-vision-preview",
                     messages=[
                         {
                             "role": "user",
@@ -354,6 +364,9 @@ def main():
                     parsed_json = json.loads(raw_json)
                     # Reformatar o JSON com indentação
                     pretty_json = json.dumps(parsed_json, indent=4, ensure_ascii=False)
+                    # Atualizar tanto o JSON gerado quanto o editor de JSON
+                    st.session_state.generated_json = pretty_json
+                    st.session_state.ace_json_editor = pretty_json
                     return pretty_json
                 except json.JSONDecodeError as e:
                     st.error(f"Erro ao parsear o JSON retornado pela API: {e}")
@@ -415,10 +428,10 @@ def main():
 
                 # Editor de código Ace para edição do JSON com destaque de sintaxe
                 edited_json = st_ace(
-                    value=st.session_state.generated_json,
+                    value=st.session_state.ace_json_editor,
                     language='json',
                     theme='twilight',  # Você pode escolher outros temas disponíveis
-                    key='ace_json_editor',
+                    key=f'ace_json_editor_{st.session_state.editor_version}',  # Chave única baseada na versão
                     height=900,  # Aumentei a altura para melhor visualização
                     font_size=18,
                     show_gutter=True,
@@ -427,14 +440,16 @@ def main():
                 )
 
                 # Atualizar o JSON no session_state se houver alterações
-                if edited_json and edited_json != st.session_state.generated_json:
+                if edited_json and edited_json != st.session_state.ace_json_editor:
                     try:
                         parsed_json = json.loads(edited_json)
                         # Reformatar o JSON com indentação
-                        st.session_state.generated_json = json.dumps(parsed_json, indent=4, ensure_ascii=False)
+                        pretty_json = json.dumps(parsed_json, indent=4, ensure_ascii=False)
+                        st.session_state.generated_json = pretty_json
+                        st.session_state.ace_json_editor = pretty_json
                     except json.JSONDecodeError as e:
                         # Se o JSON for inválido, manter o texto editado como está
-                        st.session_state.generated_json = edited_json
+                        st.session_state.ace_json_editor = edited_json
 
         except Exception as e:
             st.error('Ocorreu um erro no processamento. Por favor, tente novamente.')
@@ -442,4 +457,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
