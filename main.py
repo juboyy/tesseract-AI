@@ -257,7 +257,7 @@ def main():
                         f"{field_definitions}\n"
                         "Conteúdo extraído via OCR (pode conter erros):\n"
                         f"{st.session_state.ocr_text}\n\n"
-                        "Estrutura do JSON a ser preenchido:\n"
+                        "Estrutura do JSON a ser preenchido, caso não tenha informações dentro da seção, exiba apenas o array vazio []:\n"
                         "[\n"
                         "  {\n"
                         "    \"numeroRps\": \"\",\n"
