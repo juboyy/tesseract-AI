@@ -2,4 +2,4 @@ Especificação, instruções de instalação e custo. ->    https://wooded-phlo
 
 
 
-Aplicação funcional ->    ofmtesseract.streamlit.app
+Link da aplicação ->    https://ofmtesseract.streamlit.app
